@@ -39,15 +39,41 @@ else
 MD5SUM := md5sum
 endif
 
+ifndef RPM_BUILD_ROOT_DIR
+RPM_BUILD_ROOT_DIR=$(HOME)/rpmbuild
+endif
+
+ifndef PACKAGE
+PACKAGE=$(shell python ./setup.py --name)
+endif
+
+ifndef PACKAGE_FULLNAME
+PACKAGE_FULLNAME=$(shell python ./setup.py --fullname)
+endif
+
+
 release: docs
 	python ./setup.py sdist --formats=zip
 	python ./setup.py sdist --formats=gztar
 	python ./setup.py bdist_egg
 	zip -r dist/docs.zip docs && rm -rf docs
 	cd dist && $(MD5SUM) paramiko*.zip *.gz > md5-sums
-	cd dist && gpg -ba paramiko*.zip
-	cd dist && gpg -ba paramiko*.gz
+	#cd dist && gpg -ba paramiko*.zip
+	#cd dist && gpg -ba paramiko*.gz
 	
+
+rpm-build-env:
+	$(MKDIR_P) $(RPM_BUILD_ROOT_DIR)/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}
+
+
+rpm: release install-rpm
+	rpmbuild -bb $(RPM_BUILD_ROOT_DIR)/SPECS/python-$(PACKAGE).spec
+
+
+install-rpm:
+	cp -a python-$(PACKAGE).spec $(RPM_BUILD_ROOT_DIR)/SPECS/
+	cd dist && cp -a $(PACKAGE_FULLNAME).tar.gz $(RPM_BUILD_ROOT_DIR)/SOURCES/
+
 
 docs: always
 	epydoc --no-private -o docs/ paramiko
@@ -62,6 +88,13 @@ clean:
 
 test:
 	python ./test.py
+
+
+test-build:
+	$(info RPM_BUILD_ROOT_DIR is $(RPM_BUILD_ROOT_DIR))
+	$(info PACKAGE is $(PACKAGE))
+	$(info PACKAGE_FULLNAME is $(PACKAGE_FULLNAME))
+
 
 # places where the version number is stored:
 #

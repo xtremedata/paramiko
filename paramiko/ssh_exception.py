@@ -113,3 +113,13 @@ class BadHostKeyException (SSHException):
         self.key = got_key
         self.expected_key = expected_key
 
+
+
+class AbortException (SSHException):
+    """
+    Exception raised when operation has been aborted on user request.
+
+    @since: 1.7
+    """
+    def __init__(self, text):
+        super(AbortException, self).__init__(text)

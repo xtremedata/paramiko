@@ -542,9 +542,10 @@ class SFTPClient (BaseSFTP):
         @param remotepath: the destination path on the SFTP server
         @type remotepath: str
         @param callback: optional callback function that accepts the bytes
-            transferred so far and the total bytes to be transferred
+            transferred so far and the total bytes to be transferred,
+            False return value triggers file transfer abort
             (since 1.7.4)
-        @type callback: function(int, int)
+        @type callback: function(int, int): bool
         @return: an object containing attributes about the given file
             (since 1.7.4)
         @rtype: SFTPAttributes
@@ -553,27 +554,37 @@ class SFTPClient (BaseSFTP):
         """
         file_size = os.stat(localpath).st_size
         fl = file(localpath, 'rb')
+        cont_f = True
+        abort_f = False
         try:
             fr = self.file(remotepath, 'wb')
             fr.set_pipelined(True)
             size = 0
             try:
-                while True:
+                while cont_f:
                     data = fl.read(32768)
                     if len(data) == 0:
                         break
                     fr.write(data)
                     size += len(data)
                     if callback is not None:
-                        callback(size, file_size)
+                        if not callback(size, file_size):
+                            cont_f = False
+                            abort_f = True
             finally:
                 fr.close()
+                if abort_f:
+                    self.remove(remotepath)
         finally:
             fl.close()
-        s = self.stat(remotepath)
-        if s.st_size != size:
-            raise IOError('size mismatch in put!  %d != %d' % (s.st_size, size))
-        return s
+
+        if not abort_f:
+            s = self.stat(remotepath)
+            if s.st_size != size:
+                raise IOError('size mismatch in put!  %d != %d' % (s.st_size, size))
+            return s
+        else:
+            raise AbortException('User aborted file transfer')
     
     def get(self, remotepath, localpath, callback=None):
         """
