@@ -568,7 +568,7 @@ class SFTPClient (BaseSFTP):
                     fr.write(data)
                     size += len(data)
                     if callback is not None:
-                        call_res = callback(size, file_size):
+                        call_res = callback(size, file_size)
                         if call_res:
                             pass
                         elif call_res is None:
