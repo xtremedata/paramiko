@@ -73,6 +73,7 @@ rpm: release install-rpm
 install-rpm:
 	cp -a python-$(PACKAGE).spec $(RPM_BUILD_ROOT_DIR)/SPECS/
 	cd dist && cp -a $(PACKAGE_FULLNAME).tar.gz $(RPM_BUILD_ROOT_DIR)/SOURCES/
+	cd patches && cp -a *.patch $(RPM_BUILD_ROOT_DIR)/SOURCES/
 
 
 docs: always
